@@ -1,0 +1,17 @@
+version: "3.8"
+services:
+  service1:
+    build: .
+    environment:
+      - SERVICE_ID=service1
+      - PEER_URL=http://service2:8080
+    ports:
+      - "8081:8080"
+
+  service2:
+    build: .
+    environment:
+      - SERVICE_ID=service2
+      - PEER_URL=http://service1:8080
+    ports:
+      - "8082:8080"
