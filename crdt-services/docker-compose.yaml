@@ -1,0 +1,76 @@
+version: "3.8"
+
+services:
+  gcounter1:
+    build: ./gcounter
+    environment:
+      PORT: "8080"
+      NODE_ID: "g1"
+      PEER_URL: "http://gcounter2:8080"
+    ports: ["8081:8080"]
+
+  gcounter2:
+    build: ./gcounter
+    environment:
+      PORT: "8080"
+      NODE_ID: "g2"
+      PEER_URL: "http://gcounter1:8080"
+    ports: ["8082:8080"]
+
+  pncounter1:
+    build: ./pncounter
+    environment:
+      PORT: "8080"
+      NODE_ID: "p1"
+      PEER_URL: "http://pncounter2:8080"
+    ports: ["8083:8080"]
+
+  pncounter2:
+    build: ./pncounter
+    environment:
+      PORT: "8080"
+      NODE_ID: "p2"
+      PEER_URL: "http://pncounter1:8080"
+    ports: ["8084:8080"]
+
+  gset1:
+    build: ./gset
+    environment:
+      PORT: "8080"
+      PEER_URL: "http://gset2:8080"
+    ports: ["8085:8080"]
+
+  gset2:
+    build: ./gset
+    environment:
+      PORT: "8080"
+      PEER_URL: "http://gset1:8080"
+    ports: ["8086:8080"]
+
+  orset1:
+    build: ./orset
+    environment:
+      PORT: "8080"
+      PEER_URL: "http://orset2:8080"
+    ports: ["8087:8080"]
+
+  orset2:
+    build: ./orset
+    environment:
+      PORT: "8080"
+      PEER_URL: "http://orset1:8080"
+    ports: ["8088:8080"]
+
+  lww1:
+    build: ./lww_register
+    environment:
+      PORT: "8080"
+      PEER_URL: "http://lww2:8080"
+    ports: ["8089:8080"]
+
+  lww2:
+    build: ./lww_register
+    environment:
+      PORT: "8080"
+      PEER_URL: "http://lww1:8080"
+    ports: ["8090:8080"]
