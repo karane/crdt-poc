@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Collaborative RGA Editor</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    textarea { width: 100%; height: 200px; }
+  </style>
+</head>
+<body>
+  <h1>Collaborative RGA Editor</h1>
+  <textarea id="editor"></textarea>
+
+  <script>
+    const editor = document.getElementById("editor");
+
+    // Local CRDT state
+    let operations = [];
+    let siteId = "site-" + Math.floor(Math.random() * 100000);
+    let counter = 0;
+
+    // Apply operation to local state
+    function applyOperation(op) {
+      if (op.type === "insert") {
+        operations.splice(op.index, 0, op.char);
+      } else if (op.type === "delete") {
+        operations.splice(op.index, 1);
+      }
+      render();
+    }
+
+    // Render CRDT state into textarea
+    function render() {
+      editor.value = operations.join("");
+    }
+
+    // Generate and send local operations
+    function localInsert(index, char) {
+      const op = { type: "insert", index, char, siteId, counter: counter++ };
+      applyOperation(op);
+      sendOperation(op);
+    }
+
+    function localDelete(index) {
+      const op = { type: "delete", index, char: operations[index], siteId, counter: counter++ };
+      applyOperation(op);
+      sendOperation(op);
+    }
+
+    // WebSocket connection
+    const ws = new WebSocket("ws://localhost:8080/ws");
+
+    ws.onopen = () => {
+      console.log("Connected to server");
+    };
+
+    ws.onmessage = (event) => {
+      const op = JSON.parse(event.data);
+      applyOperation(op);
+    };
+
+    function sendOperation(op) {
+      ws.send(JSON.stringify(op));
+    }
+
+    // Load initial RGA state from backend
+    async function loadInitialState() {
+      try {
+        const res = await fetch("http://localhost:8080/rga");
+        if (res.ok) {
+          const data = await res.json();
+          operations = data.chars || [];
+          render();
+        }
+      } catch (err) {
+        console.error("Failed to load initial RGA state:", err);
+      }
+    }
+
+    // Track edits in textarea
+    editor.addEventListener("input", (e) => {
+      const newText = editor.value;
+      const oldText = operations.join("");
+
+      let i = 0;
+      while (i < newText.length && i < oldText.length && newText[i] === oldText[i]) {
+        i++;
+      }
+
+      if (newText.length > oldText.length) {
+        // Inserted text
+        const inserted = newText.slice(i, i + (newText.length - oldText.length));
+        for (let j = 0; j < inserted.length; j++) {
+          localInsert(i + j, inserted[j]);
+        }
+      } else if (newText.length < oldText.length) {
+        // Deleted text
+        for (let j = 0; j < (oldText.length - newText.length); j++) {
+          localDelete(i);
+        }
+      }
+    });
+
+    // Initialize
+    loadInitialState();
+  </script>
+</body>
+</html>

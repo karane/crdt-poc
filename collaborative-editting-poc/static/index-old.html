@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Collaborative Editor</title>
+</head>
+<body>
+<textarea id="editor" rows="10" cols="50"></textarea>
+<script>
+let ws = new WebSocket("ws://localhost:8088/ws");
+let editor = document.getElementById("editor");
+
+ws.onmessage = (event) => {
+    const msg = JSON.parse(event.data);
+    // Simple update: re-render full text
+    if (Array.isArray(msg)) { // initial document
+        editor.value = msg.filter(c => !c.deleted).map(c => c.value).join('');
+    } else if (msg.type === "insert") {
+        editor.value = editor.value.slice(0, msg.pos) + msg.char.value + editor.value.slice(msg.pos);
+    } else if (msg.type === "delete") {
+        editor.value = editor.value.split('').filter((_, i) => i !== msg.pos).join('');
+    }
+};
+
+// Send local changes to server
+editor.addEventListener("input", (e) => {
+    const value = e.data;
+    const pos = editor.selectionStart - 1;
+    if (!value) return; // ignore deletions here
+    ws.send(JSON.stringify({type: "insert", char: {value: value}, pos: pos, site: "site1"}));
+});
+</script>
+</body>
+</html>
