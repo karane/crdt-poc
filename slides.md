@@ -37,7 +37,7 @@
    - **Merge** 
 
 2. **Operation-based (Commutative / CmRDTs):**
-   - Each replica sends operations.
+   - Each replica sends **operations to other replicas**.
    - Operations are commutative and idempotent.
 
 ---
@@ -76,18 +76,36 @@
 
 ## Examples of CRDTs – Sequences
 
-- **RGA (Replicated Growable Array)**
-  - Linearizes insertions and deletions
-  - Use case: Collaborative text editing
+\small
+
+Used for collaborative text editting  
+
+- **RGA (Replicated Growable Array)**  
+  - Text as a linked list  
+  - Linearizes insertions and deletions using unique IDs and timestamps  
+  - Simple and good for small and medium docs
+
 - **Logoot**
-  - Uses unique identifiers for positions
-  - Use case: Collaborative documents
+  - Uses global ids for positions
+  - Doesn´t require tombstones for deletions
+  - Good for large scale docs
+
+---
+
+## Examples of CRDTs – Sequences - More
+
+\small
+
 - **WOOT (WithOut Operational Transform)**
-  - Maintains linked-list structure
-  - Use case: Real-time editors
-- **LSEQ**
-  - Efficient identifier allocation
-  - Use case: Large-scale collaborative editing
+  - Doubly linked list of characters
+  - Deletions with milestones
+  - Handles complex concurrent editing scenarios
+
+- **LSEQ (List SEQuence)**
+  - Optimizes identifier allocation to keep IDs short
+  - Reduces overhead compared to Logoot in large documents
+  - Provides logarithmic growth of identifiers even with many insertions
+  - Good for large docs
 
 ---
 
