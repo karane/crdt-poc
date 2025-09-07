@@ -29,6 +29,7 @@ func NewGCounter(service string) *GCounter {
 func (c *GCounter) Increment() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
 	c.counts[c.service]++
 }
 
@@ -59,7 +60,7 @@ func main() {
 	peerURL := os.Getenv("PEER_URL")
 	counter := NewGCounter(serviceID)
 
-	http.HandleFunc("/increment", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/inc", func(w http.ResponseWriter, r *http.Request) {
 		counter.Increment()
 		fmt.Fprintf(w, "Incremented! Value: %d\n", counter.Value())
 	})

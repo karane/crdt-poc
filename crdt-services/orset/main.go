@@ -31,6 +31,7 @@ func NewORSet() *ORSet {
 func (s *ORSet) Add(element string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	tag := uuid.New().String()
 	if s.added[element] == nil {
 		s.added[element] = make(map[string]struct{})
@@ -42,6 +43,7 @@ func (s *ORSet) Add(element string) {
 func (s *ORSet) Remove(element string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	tags, ok := s.added[element]
 	if !ok {
 		return
@@ -58,8 +60,10 @@ func (s *ORSet) Remove(element string) {
 func (s *ORSet) Values() []string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	values := []string{}
 	for element, tags := range s.added {
+		// keep element if at least one tag not removed
 		for tag := range tags {
 			if _, removed := s.removed[element][tag]; !removed {
 				values = append(values, element)
@@ -70,11 +74,19 @@ func (s *ORSet) Values() []string {
 	return values
 }
 
+// ORSetState represents the transferable state of an ORSet
+type ORSetState struct {
+	Added   map[string]map[string]struct{} `json:"added"`
+	Removed map[string]map[string]struct{} `json:"removed"`
+}
+
 // Merge merges another ORSet state into this one
-func (s *ORSet) Merge(peerState map[string]map[string]struct{}) {
+func (s *ORSet) Merge(peerState ORSetState) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	for element, tags := range peerState {
+
+	// Merge added tags
+	for element, tags := range peerState.Added {
 		if s.added[element] == nil {
 			s.added[element] = make(map[string]struct{})
 		}
@@ -82,8 +94,16 @@ func (s *ORSet) Merge(peerState map[string]map[string]struct{}) {
 			s.added[element][tag] = struct{}{}
 		}
 	}
-	// Note: For a full OR-Set merge, we would also need a removed map from the peer.
-	// For simplicity, here we assume peerState only contains added elements.
+
+	// Merge removed tags
+	for element, tags := range peerState.Removed {
+		if s.removed[element] == nil {
+			s.removed[element] = make(map[string]struct{})
+		}
+		for tag := range tags {
+			s.removed[element][tag] = struct{}{}
+		}
+	}
 }
 
 func main() {
@@ -91,9 +111,9 @@ func main() {
 	set := NewORSet()
 
 	http.HandleFunc("/add", func(w http.ResponseWriter, r *http.Request) {
-		val := r.URL.Query().Get("value")
+		val := r.URL.Query().Get("element")
 		if val == "" {
-			http.Error(w, "Missing 'value' parameter", http.StatusBadRequest)
+			http.Error(w, "Missing 'element' parameter", http.StatusBadRequest)
 			return
 		}
 		set.Add(val)
@@ -101,32 +121,51 @@ func main() {
 	})
 
 	http.HandleFunc("/remove", func(w http.ResponseWriter, r *http.Request) {
-		val := r.URL.Query().Get("value")
+		val := r.URL.Query().Get("element")
 		if val == "" {
-			http.Error(w, "Missing 'value' parameter", http.StatusBadRequest)
+			http.Error(w, "Missing 'element' parameter", http.StatusBadRequest)
 			return
 		}
 		set.Remove(val)
 		fmt.Fprintf(w, "Removed: %s\n", val)
 	})
 
-	http.HandleFunc("/values", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/value", func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(set.Values())
 	})
 
 	http.HandleFunc("/state", func(w http.ResponseWriter, r *http.Request) {
 		set.mu.Lock()
 		defer set.mu.Unlock()
-		json.NewEncoder(w).Encode(set.added)
+		state := ORSetState{
+			Added:   set.added,
+			Removed: set.removed,
+		}
+		json.NewEncoder(w).Encode(state)
+	})
+
+	// New: Merge endpoint (peers can push state here)
+	http.HandleFunc("/merge", func(w http.ResponseWriter, r *http.Request) {
+		var peerState ORSetState
+		if err := json.NewDecoder(r.Body).Decode(&peerState); err != nil {
+			http.Error(w, "Invalid state payload", http.StatusBadRequest)
+			return
+		}
+		set.Merge(peerState)
+		fmt.Fprintln(w, "State merged")
 	})
 
 	// Periodically pull state from peer
 	go func() {
 		for {
+			if peerURL == "" {
+				time.Sleep(3 * time.Second)
+				continue
+			}
 			resp, err := http.Get(peerURL + "/state")
 			if err == nil {
 				body, _ := ioutil.ReadAll(resp.Body)
-				var peerState map[string]map[string]struct{}
+				var peerState ORSetState
 				if err := json.Unmarshal(body, &peerState); err == nil {
 					set.Merge(peerState)
 				}

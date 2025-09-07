@@ -123,7 +123,7 @@ func main() {
 				var peerState map[string]map[string]int
 				if err := json.Unmarshal(body, &peerState); err == nil {
 					counter.Merge(peerState)
-					log.Printf("PNCounter merged with %s\n", peerURL)
+					// log.Printf("PNCounter merged with %s\n", peerURL)
 				}
 				resp.Body.Close()
 			}

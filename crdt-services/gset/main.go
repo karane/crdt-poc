@@ -55,16 +55,16 @@ func main() {
 	set := NewGSet()
 
 	http.HandleFunc("/add", func(w http.ResponseWriter, r *http.Request) {
-		val := r.URL.Query().Get("value")
+		val := r.URL.Query().Get("element")
 		if val == "" {
-			http.Error(w, "Missing 'value' parameter", http.StatusBadRequest)
+			http.Error(w, "Missing 'element' parameter", http.StatusBadRequest)
 			return
 		}
 		set.Add(val)
 		fmt.Fprintf(w, "Added: %s\n", val)
 	})
 
-	http.HandleFunc("/values", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/value", func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(set.Values())
 	})
 
