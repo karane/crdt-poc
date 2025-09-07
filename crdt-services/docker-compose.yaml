@@ -75,16 +75,3 @@ services:
       PEER_URL: "http://lww1:8080"
     ports: ["8090:8080"]
 
-  rga1:
-    build: ./rga
-    environment:
-      PORT: "8080"
-      PEER_URL: "http://rga2:8080"
-    ports: ["8091:8080"]
-
-  rga2:
-    build: ./rga
-    environment:
-      PORT: "8080"
-      PEER_URL: "http://rga1:8080"
-    ports: ["8092:8080"]

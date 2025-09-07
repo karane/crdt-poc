@@ -88,7 +88,7 @@ func main() {
 				resp.Body.Close()
 			}
 			// sync every 3s
-			<-time.After(3 * time.Second)
+			<-time.After(4 * time.Second)
 		}
 	}()
 

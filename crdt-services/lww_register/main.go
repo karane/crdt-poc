@@ -94,7 +94,7 @@ func main() {
 				}
 				resp.Body.Close()
 			}
-			time.Sleep(3 * time.Second)
+			time.Sleep(4 * time.Second)
 		}
 	}()
 

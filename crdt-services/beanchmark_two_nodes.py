@@ -22,8 +22,8 @@ GSET_NODES = ["http://localhost:8085",
 ORSET_NODES = ["http://localhost:8087", 
                "http://localhost:8088"]
 
-RGA_NODES = ["http://localhost:8091", 
-               "http://localhost:8092"]
+LWW_NODES = ["http://localhost:8089", 
+             "http://localhost:8090"]
 
 # Number of operations per node
 OPERATIONS = 5
@@ -81,6 +81,7 @@ def benchmark_counter(nodes, name="Counter"):
         values = [get_value(node) for node in nodes]
         print(f"Step {i+1}: {values}")
 
+    time.sleep(3* SYNC_WAIT)
     final_values = [get_value(node) for node in nodes]
     print(f"{GREEN}Final {name} node values: {final_values}{RESET}")
     print(f"{GREEN}[{name}] All equal? {all(v == final_values[0] for v in final_values)}{RESET}")
@@ -96,6 +97,7 @@ def benchmark_pncounter(nodes, name="PNCounter"):
         values = [get_value(node) for node in nodes]
         print(f"Step {i+1}: {values}")
 
+    time.sleep(3 *SYNC_WAIT)
     final_values = [get_value(node) for node in nodes]
     print(f"{GREEN}Final {name} node values: {final_values}{RESET}")
     print(f"{GREEN}[{name}] All equal? {all(v == final_values[0] for v in final_values)}{RESET}")
@@ -110,6 +112,7 @@ def benchmark_gset(nodes, name="Set"):
         states = [get_state(node) for node in nodes]
         print(f"Step {i+1}: {states}")
 
+    time.sleep(3*SYNC_WAIT)
     final_states = [get_state(node) for node in nodes]
     print(f"{GREEN}Final {name} node states: {final_states}{RESET}")
 
@@ -141,11 +144,46 @@ def benchmark_orset(nodes, name="ORSet"):
         states = [get_state(node) for node in nodes]
         print(f"Step {i+1}: {states}")
 
+    time.sleep(3*SYNC_WAIT)
     final_states = [get_state(node) for node in nodes]
     print(f"{GREEN}Final {name} node states: {final_states}{RESET}")
 
     sets = [set(s) if s else set() for s in final_states]
     all_equal = all(s == sets[0] for s in sets)
+    print(f"{GREEN}[{name}] All equal? {all_equal}{RESET}")
+
+def set_random_lww(url):
+    value = ''.join(random.choices(string.ascii_letters + string.digits, k=5))
+    try:
+        requests.post(url + f"/set?value={value}")
+    except Exception as e:
+        print(f"Error setting LWW value on {url}: {e}")
+    return value
+
+def get_lww_value(url):
+    try:
+        r = requests.get(url + "/value")
+        # The response format is "Value: XYZ", so split by ':' and strip
+        return r.text.strip().split(":")[-1].strip()
+    except Exception as e:
+        print(f"Error fetching LWW value from {url}: {e}")
+        return None
+
+def benchmark_lwwregister(nodes, name="LWWRegister"):
+    print(f"\nBenchmarking {name}...")
+    for i in range(OPERATIONS):
+        with ThreadPoolExecutor(max_workers=len(nodes)) as executor:
+            executor.submit(set_random_lww, nodes[0])
+            executor.submit(set_random_lww, nodes[1])
+        time.sleep(SYNC_WAIT)
+        values = [get_lww_value(node) for node in nodes]
+        print(f"Step {i+1}: {values}")
+
+    time.sleep(3*SYNC_WAIT)
+
+    final_values = [get_lww_value(node) for node in nodes]
+    all_equal = all(v == final_values[0] for v in final_values)
+    print(f"{GREEN}Final {name} node values: {final_values}{RESET}")
     print(f"{GREEN}[{name}] All equal? {all_equal}{RESET}")
          
 if __name__ == "__main__":
@@ -153,6 +191,7 @@ if __name__ == "__main__":
     benchmark_pncounter(PNCOUNTER_NODES, "PNCounter")
     benchmark_gset(GSET_NODES, "GSet")
     benchmark_orset(ORSET_NODES, "ORSet")
+    benchmark_lwwregister(LWW_NODES, "LWWRegister")
 
 
     # Small sleep to let all threads be cleaned up properly
