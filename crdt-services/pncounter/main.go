@@ -129,7 +129,7 @@ func main() {
 						log.Printf("Error unmarshalling state from peer %s: %v", peerURL, err)
 					} else {
 						counter.Merge(peerState)
-						log.Printf("[PNCounter] Merged from peer %s", peerURL)
+						// log.Printf("[PNCounter] Merged from peer %s", peerURL)
 					}
 				}
 				resp.Body.Close()
