@@ -22,8 +22,11 @@
 
 - **CRDTs are data structures designed for distributed systems.**
 - They guarantee **strong eventual consistency**.
-- **Key property:** Updates can be applied in any order, on any replica, and all replicas **converge** to the same state.
-- Achieved via **mathematical merge rules** that are:
+- Updates can be applied:
+  - in any order, 
+  - on any replica, 
+  - and all replicas **converge** to the same state.
+- Operations are:
   - Commutative
   - Associative
   - Idempotent
@@ -104,32 +107,20 @@ Used for collaborative text editting
 - **LSEQ (List SEQuence)**
   - Optimizes identifier allocation to keep IDs short
   - Reduces overhead compared to Logoot in large documents
-  - Provides logarithmic growth of identifiers even with many insertions
   - Good for large docs
 
 ---
 
-## Why CRDTs Matter
+## Applications and Libraries
 
-- **No locks, no central coordination.**
-- Tolerates **network partitions**.
 - Perfect for:
   - **Real-time collaboration** (Google Docs, Figma, Notion)
   - **Geo-replicated databases** (Riak, Redis CRDTs, AntidoteDB)
   - **Offline-first apps** (messaging apps, note-taking apps)
-- Each CRDT type is suited for a specific use case:
-  - Counters → metrics, likes, inventory  
-  - Sets → membership, shared collections  
-  - Registers → configs, profiles  
-  - Sequences → text, code, documents
 
----
-
-## Libraries Using CRDTs
-
-- **Collaboration / Real-time Editors**  
-  -- **Automerge** – JavaScript CRDT library for collaborative applications  
-  -- **Yjs** – CRDT library for collaborative text, spreadsheets, and graphics  
+- Libraries Using CRDTs
+  - **Automerge** – JavaScript CRDT library for collaborative applications  
+  - **Yjs** – CRDT library for collaborative text, spreadsheets, and graphics  
 
 ---
 
