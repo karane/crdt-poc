@@ -75,3 +75,6 @@ services:
       PEER_URL: "http://lww1:8080"
     ports: ["8090:8080"]
 
+networks:
+  default:
+    name: crdt_network

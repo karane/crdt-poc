@@ -117,13 +117,20 @@ func main() {
 	go func() {
 		for {
 			resp, err := http.Get(peerURL + "/state")
-			// log.Printf("Ping on %s/state\n", peerURL)
-			if err == nil {
-				body, _ := ioutil.ReadAll(resp.Body)
-				var peerState map[string]map[string]int
-				if err := json.Unmarshal(body, &peerState); err == nil {
-					counter.Merge(peerState)
-					// log.Printf("PNCounter merged with %s\n", peerURL)
+			if err != nil {
+				log.Printf("Error fetching state from peer %s: %v", peerURL, err)
+			} else {
+				body, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					log.Printf("Error reading response body from peer %s: %v", peerURL, err)
+				} else {
+					var peerState map[string]map[string]int
+					if err := json.Unmarshal(body, &peerState); err != nil {
+						log.Printf("Error unmarshalling state from peer %s: %v", peerURL, err)
+					} else {
+						counter.Merge(peerState)
+						log.Printf("[PNCounter] Merged from peer %s", peerURL)
+					}
 				}
 				resp.Body.Close()
 			}
